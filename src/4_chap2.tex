@@ -1,0 +1,139 @@
+\chapter{Анализ математической модели}
+\label{ch:chap2}
+
+\section{Точка равновесия}
+
+Точка равновесия планарного квадрокоптера соответствует состоянию, при котором аппарат находится в покое на заданной высоте с горизонтальной ориентацией корпуса. В этом состоянии все скорости равны нулю, а суммарная тяга компенсирует силу тяжести.
+
+Для системы уравнений (\ref{eq:translational_dynamics}) и уравнения вращательной динамики точка равновесия определяется как:
+
+\begin{equation}
+    x = x_0, \quad v_x = 0, \quad z = z_0, \quad v_z = 0, \quad \theta = 0, \quad \omega_\theta = 0
+    \label{eq:equilibrium}
+\end{equation}
+
+где $x_0$ и $z_0$ --- заданные координаты положения квадрокоптера.
+
+В точке равновесия управляющие воздействия принимают значения:
+\begin{equation}
+    T_0 = m g, \quad u_2 = 0
+    \label{eq:equilibrium_control}
+\end{equation}
+
+где $T_0$ --- тяга, компенсирующая силу тяжести.
+
+\section{Линеаризация системы}
+
+Для синтеза регулятора обратной связи по состоянию необходимо линеаризовать нелинейную модель в окрестности точки равновесия. Введём отклонения от равновесного состояния:
+
+\begin{equation}
+    \delta x = x - x_0, \quad \delta v_x = v_x, \quad \delta z = z - z_0, \quad \delta v_z = v_z, \quad \delta \theta = \theta, \quad \delta \omega_\theta = \omega_\theta
+    \label{eq:deviations}
+\end{equation}
+
+\begin{equation}
+    \delta T = T - T_0, \quad \delta u_2 = u_2
+    \label{eq:control_deviations}
+\end{equation}
+
+При малых углах наклона ($\theta \ll 1$) справедливы приближения:
+\begin{equation}
+    \sin\theta \approx \theta, \quad \cos\theta \approx 1
+    \label{eq:small_angle}
+\end{equation}
+
+Линеаризованная система уравнений имеет вид:
+\begin{subequations}
+\label{eq:linearized_system}
+\begin{align}
+    \delta \dot{x} &= \delta v_x, \\
+    \delta \dot{v_x} &= -\frac{T_0}{m} \delta \theta - \frac{\delta T}{m} \theta_0, \\
+    \delta \dot{z} &= \delta v_z, \\
+    \delta \dot{v_z} &= \frac{\delta T}{m}, \\
+    \delta \dot{\theta} &= \delta \omega_\theta, \\
+    \delta \dot{\omega_\theta} &= \frac{\delta u_2}{J}
+\end{align}
+\end{subequations}
+
+Учитывая, что в точке равновесия $\theta_0 = 0$ и $T_0 = mg$, получаем:
+
+\begin{subequations}
+\label{eq:linearized_final}
+\begin{align}
+    \delta \dot{x} &= \delta v_x, \\
+    \delta \dot{v_x} &= -g \delta \theta, \\
+    \delta \dot{z} &= \delta v_z, \\
+    \delta \dot{v_z} &= \frac{\delta T}{m}, \\
+    \delta \dot{\theta} &= \delta \omega_\theta, \\
+    \delta \dot{\omega_\theta} &= \frac{\delta u_2}{J}
+\end{align}
+\end{subequations}
+
+В матричной форме линеаризованная система записывается как:
+
+\begin{equation}
+    \dot{\mathbf{x}} = \mathbf{A} \mathbf{x} + \mathbf{B} \mathbf{u}
+    \label{eq:state_space}
+\end{equation}
+
+где вектор состояния $\mathbf{x} = \begin{bmatrix} \delta x & \delta v_x & \delta z & \delta v_z & \delta \theta & \delta \omega_\theta \end{bmatrix}^T$, вектор управления $\mathbf{u} = \begin{bmatrix} \delta T & \delta u_2 \end{bmatrix}^T$, а матрицы системы имеют вид:
+
+\begin{equation}
+    \mathbf{A} = \begin{bmatrix}
+        0 & 1 & 0 & 0 & 0 & 0 \\
+        0 & 0 & 0 & 0 & -g & 0 \\
+        0 & 0 & 0 & 1 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 0 & 1 \\
+        0 & 0 & 0 & 0 & 0 & 0
+    \end{bmatrix}, \quad
+    \mathbf{B} = \begin{bmatrix}
+        0 & 0 \\
+        0 & 0 \\
+        0 & 0 \\
+        \frac{1}{m} & 0 \\
+        0 & 0 \\
+        0 & \frac{1}{J}
+    \end{bmatrix}
+    \label{eq:AB_matrices}
+\end{equation}
+
+\section{Управляемость системы}
+
+Для проверки управляемости системы необходимо вычислить матрицу управляемости:
+
+\begin{equation}
+    \mathcal{C} = \begin{bmatrix} \mathbf{B} & \mathbf{A}\mathbf{B} & \mathbf{A}^2\mathbf{B} & \mathbf{A}^3\mathbf{B} & \mathbf{A}^4\mathbf{B} & \mathbf{A}^5\mathbf{B} \end{bmatrix}
+    \label{eq:controllability}
+\end{equation}
+
+Система полностью управляема, если $\text{rank}(\mathcal{C}) = 6$.
+Вычисление показывает, что матрица управляемости имеет полный ранг, что означает возможность стабилизации всех переменных состояния с помощью двух управляющих воздействий.
+
+Особенностью планарного квадрокоптера является то, что горизонтальное положение $x$ управляется косвенно через угол наклона $\theta$, что отражается в структуре матрицы $\mathbf{A}$: вторая строка содержит $-g$ в столбце, соответствующем $\delta \theta$.
+
+\section{Наблюдаемость системы}
+
+Предполагая, что доступны измерения всех переменных состояния (полное измерение состояния), система является полностью наблюдаемой.
+В случае частичного измерения состояния необходимо проверить наблюдаемость через матрицу наблюдаемости:
+
+\begin{equation}
+    \mathcal{O} = \begin{bmatrix} \mathbf{C} \\ \mathbf{C}\mathbf{A} \\ \mathbf{C}\mathbf{A}^2 \\ \vdots \\ \mathbf{C}\mathbf{A}^{n-1} \end{bmatrix}
+    \label{eq:observability}
+\end{equation}
+
+где $\mathbf{C}$ --- матрица выхода, определяющая, какие переменные состояния измеряются.
+
+\section{Собственные значения и устойчивость}
+
+Характеристический полином линеаризованной системы:
+
+\begin{equation}
+    \det(s\mathbf{I} - \mathbf{A}) = s^6
+    \label{eq:characteristic}
+\end{equation}
+
+Все собственные значения равны нулю, что означает, что система находится на границе устойчивости.
+Это соответствует физической интерпретации: без управления квадрокоптер не может самостоятельно поддерживать заданное положение и ориентацию, что подтверждается результатами моделирования свободного движения (раздел~\ref{ch:chap4}).
+Для обеспечения устойчивости необходимо введение обратной связи по состоянию.
+
